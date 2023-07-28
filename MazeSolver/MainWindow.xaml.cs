@@ -25,7 +25,8 @@ namespace MazeSolver
     public partial class MainWindow : Window
     {
         Bitmap bm = new Bitmap(100, 100);
-        List<Task<Types.ImageResult>> tasks = new List<Task<Types.ImageResult>();
+        //List<Task<Types.ImageResult>> tasks = new List<Task<Types.ImageResult>>();
+        List<Task> tasks = new List<Task>();
         public MainWindow()
         {
             InitializeComponent();
@@ -39,7 +40,7 @@ namespace MazeSolver
         private void INM_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog ofd = new OpenFileDialog();
-            if(ofd.ShowDialog().HasValue)
+            if((bool)ofd.ShowDialog())
             {
                 System.Drawing.Color white = System.Drawing.Color.FromArgb(255, 255, 255);
                 if(bm.Height == 100 && bm.Width == 100) // && bm.GetPixel(0, 0) == white && bm.GetPixel(100, 100) == white)
@@ -59,10 +60,19 @@ namespace MazeSolver
             StartMS.IsEnabled = false;
             StopMS.IsEnabled = true;
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 10; i++)
             {
-                Task<Types.ImageResult> task = new Task<Types.ImageResult>(new Types.Solver().Solve(bm));
+                /*Task<Types.ImageResult> task = new Task<Types.ImageResult>(bm => {
+                    new Types.Solver().Solve(bm);
+                })(bm);*/
 
+                /*Task<Types.ImageResult> t = Task.Factory.StartNew<Types.ImageResult>(bm =>
+                {
+                    return new Types.Solver().Solve(bm);
+                });*/
+
+                //tasks.Add(Task.Factory.StartNew(() => new Types.Solver().Solve(bm)));
+                tasks.Add(Task.Factory.StartNew(() => StartNewSolver(bm, i)));
             }
         }
 
@@ -74,8 +84,9 @@ namespace MazeSolver
             });
         }
 
-        public BitmapImage ToBitmapImage(Bitmap bitmap) // https://stackoverflow.com/a/23831231/16426057
+        public BitmapImage ToBitmapImage(Bitmap bitmapa) // https://stackoverflow.com/a/23831231/16426057
         {
+            Bitmap bitmap = bitmapa;
             using (var memory = new MemoryStream())
             {
                 bitmap.Save(memory, ImageFormat.Png);
@@ -96,9 +107,20 @@ namespace MazeSolver
         {
             Button button = new Button();
             button.Content = new System.Windows.Controls.Image() { Source = ToBitmapImage(bitmap) };
-            button.Width = 100;
-            button.Height = 100;
+            //button.Width = 100;
+            //button.Height = 100;
             Images.Children.Add(button);
+        }
+
+        private void StartNewSolver(Bitmap bm, int seed)
+        {
+            Types.ImageResult result = new Types.Solver().Solve(bm, seed);
+            Dispatcher.Invoke(new Action(() => UpdateWithResult(result)));
+        }
+
+        private void UpdateWithResult(Types.ImageResult result)
+        {
+            AddImageToList(result.Bitmap);
         }
     }
 }
